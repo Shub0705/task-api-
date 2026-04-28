@@ -1,0 +1,45 @@
+pipeline{
+    agent any 
+    environment{
+        DOCKER_IMAGE= "shubhamdoc0705/task-api"
+        DOCKER_VER= "V1.0.${BUILD_Number}"
+    }
+    
+    stages{
+        stage('Git Checkout Dev'){
+            steps{
+                git branch: 'dev', credentialsId: 'Git', url: 'https://github.com/Shub0705/task-api-.git'
+            }
+        }
+        stage('BUILD'){
+            steps{
+                sh'''
+                 docker build -t ${DOCKER_IMAGE}:${DOCKER_VER} .
+                 docker tag ${DOCKER_IMAGE}:${DOCKER_VER} ${DOCKER_IMAGE}:latest
+                '''
+            }
+        }
+        stage('Push Hub'){
+            steps{withCredentials([usernamePassword(
+                    credentialsId: 'DOCKER-CRED',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'   )]){
+                        sh'''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_VER}
+                        docker push ${DOCKER_IMAGE}:latest
+                        '''
+                    }
+                
+            }
+        }
+    }
+    post{
+        success{
+            echo "chalo so jau ab"
+        }
+        failure{
+            echo "Lawade lagale"
+        }
+    }
+}
