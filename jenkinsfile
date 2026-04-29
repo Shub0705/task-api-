@@ -21,7 +21,7 @@ pipeline{
         }
         stage('Push Hub'){
             steps{withCredentials([usernamePassword(
-                    credentialsId: 'DOCKER-CRED',
+                    credentialsId: 'DOCKER_CRED',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'   )]){
                         sh'''
