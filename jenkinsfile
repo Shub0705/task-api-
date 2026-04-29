@@ -1,45 +1,59 @@
-pipeline{
-    agent any 
-    environment{
-        DOCKER_IMAGE= "shubhamdoc0705/task-api"
-        DOCKER_VER= "V1.0.${BUILD_NUMBER}"
-    }
+pipeline {
+    agent any
     
-    stages{
-        stage('Git Checkout Dev'){
-            steps{
+    environment {
+        DOCKER_IMAGE = "shubhamdoc0705/task-api"
+        DOCKER_VER = "V1.0.${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Git Checkout Dev') {
+            steps {
                 git branch: 'dev', credentialsId: 'Git', url: 'https://github.com/Shub0705/task-api-.git'
             }
         }
-        stage('BUILD'){
-            steps{
-                sh'''
-                 docker build -t ${DOCKER_IMAGE}:${DOCKER_VER} .
-                 docker tag ${DOCKER_IMAGE}:${DOCKER_VER} ${DOCKER_IMAGE}:latest
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKER_CRED',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]){
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    # Force pull base image to avoid cached auth issues
+                    docker build --pull -t ${DOCKER_IMAGE}:${DOCKER_VER} .
+                    docker tag ${DOCKER_IMAGE}:${DOCKER_VER} ${DOCKER_IMAGE}:latest
                 '''
             }
         }
-        stage('Push Hub'){
-            steps{withCredentials([usernamePassword(
-                    credentialsId: 'DOCKER_CRED',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'   )]){
-                        sh'''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${DOCKER_IMAGE}:${DOCKER_VER}
-                        docker push ${DOCKER_IMAGE}:latest
-                        '''
-                    }
-                
+
+        stage('Push to Docker Hub') {
+            steps {
+                sh '''
+                    docker push ${DOCKER_IMAGE}:${DOCKER_VER}
+                    docker push ${DOCKER_IMAGE}:latest
+                '''
             }
         }
     }
-    post{
-        success{
-            echo "chalo so jau ab"
+
+    post {
+        success {
+            echo "✅ Build and push successful. Chalo so jau ab!"
         }
-        failure{
-            echo "Lawade lagale"
+        failure {
+            echo "❌ Build or push failed. Lawade lagale!"
         }
     }
 }
