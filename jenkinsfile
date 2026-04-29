@@ -2,7 +2,7 @@ pipeline{
     agent any 
     environment{
         DOCKER_IMAGE= "shubhamdoc0705/task-api"
-        DOCKER_VER= "V1.0.${BUILD_Number}"
+        DOCKER_VER= "V1.0.${BUILD_NUMBER}"
     }
     
     stages{
